@@ -1,0 +1,10 @@
+# Configuration variables for mscbot-bot
+[github]
+repo = "matrix-org/matrix-doc"
+
+[mscbot]
+url = "https://mscbot.matrix.org"
+
+[matrix]
+user_id = "@mscbot:matrix.org"
+token = ""
