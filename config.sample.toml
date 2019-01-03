@@ -1,10 +1,25 @@
-# Configuration variables for mscbot-bot
+# Configuration variables. All are required
+
 [github]
+# Proposal repository
 repo = "matrix-org/matrix-doc"
+# Github bot user token
+token = ""
 
 [mscbot]
+# MSCBot web server (https://github.com/matrix-org/mscbot)
 url = "https://mscbot.matrix.org"
 
 [matrix]
+# Bot user ID
 user_id = "@mscbot:matrix.org"
+# Bot token
 token = ""
+
+[bot]
+# Print a daily summary at this time. Time in UTC
+daily_summary_time = "07:00"
+
+[msc]
+# Duration of a final comment period
+fcp_length = 5
