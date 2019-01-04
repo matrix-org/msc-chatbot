@@ -183,6 +183,7 @@ def reply_fcp_mscs(mscs):
                 # Check mscbot user id (retrieve from `curl -A 'mscbot' https://api.github.com/users/mscbot`) 
                 if comment.user.id == 40832866 or comment.user.id == 46318632: 
                     time = comment.created_at - timedelta(days=1)
+                    return
 
             remaining_days = config["msc"]["fcp_length"] - (datetime.today() - time).days
             line = "[[MSC%d](%s)] - %s" % (msc.number, msc.url, msc.title)
