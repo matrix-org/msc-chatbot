@@ -25,7 +25,7 @@ daily_summary_time = "07:00"
 #msc_goal = 5
 
 [msc]
-# Duration of a final comment period
+# Duration of a final comment period in days
 fcp_length = 5
 
 [logging]
