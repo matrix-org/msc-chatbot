@@ -85,11 +85,11 @@ def event_received(event):
                             "<pre><code>" + 
                             "show new" +
                             "</pre></code>\n\n" + 
-                            "Show MSCs which are pending an FCP. These need review:\n\n" +
+                            "Show MSCs which are pending a FCP. These need review from team members:\n\n" +
                             "<pre><code>" + 
                             "show pending" +
                             "</pre></code>\n\n" + 
-                            "Show MSCs that are current in FCP:\n\n"
+                            "Show MSCs that are currently in FCP:\n\n"
                             "<pre><code>" + 
                             "show fcp" +
                             "</pre></code>\n\n" + 
