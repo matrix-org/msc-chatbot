@@ -81,7 +81,7 @@ def event_received(event):
                 response = reply_all_mscs(mscs)
             elif command.startswith("help"):
                 response = ("Available commands:\n\n" +
-                            "Show MSCs that still need review:\n\n"
+                            "Show MSCs that are still being finalized:\n\n"
                             "<pre><code>" + 
                             "show new" +
                             "</pre></code>\n\n" + 
