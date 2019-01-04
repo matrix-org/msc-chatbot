@@ -124,9 +124,9 @@ def send_summary():
                "final-comment-period" not in msc["labels"]) or
                "finished-final-comment-period" in msc["labels"]):
                completed_mscs += 1
-        info += "\n\nr0 Progress: %d/%d" % (completed_mscs/config["bot"]["msc_goal"])
+        info += "\n\nr0 Progress: %d/%d" % (completed_mscs, config["bot"]["msc_goal"])
 
-    for room in list(client.get_rooms().values):
+    for room in list(client.get_rooms().values()):
         room.send_html(markdown(info), body=info, msgtype="m.notice")
 
 def reply_new_mscs(mscs):
