@@ -21,17 +21,17 @@ msc_labels = None
 logger = None
 
 # Custom variadic functions for logging purposes
-def log_info(*arg):
+def log_info(*args):
     global logger
-    logger.info(' '.join(arg))
+    logger.info(' '.join([str(arg) for arg in args]))
 
-def log_warn(*arg):
+def log_warn(*args):
     global logger
-    logger.warn(' '.join(arg))
+    logger.warn(' '.join([str(arg) for arg in args]))
 
-def log_fatal(*arg):
+def log_fatal(*args):
     global logger
-    logger.fatal(' '.join(arg))
+    logger.fatal(' '.join([str(arg) for arg in args]))
 
 def invite_received(room_id, state):
     """Matrix room invite received. Join the room"""
@@ -40,8 +40,8 @@ def invite_received(room_id, state):
     try:
         log_info("Joining room:", room_id)
         client.join_room(room_id)
-    except Exception as e:
-        log_warn("Unable to join room:", e)
+    except Exception:
+        log_warn("Unable to join room:", room_id)
         log_warn("Trying again...")
         time.sleep(5)
         invite_received(room_id, state)
@@ -101,8 +101,8 @@ def event_received(event):
             # Send the response
             log_info("Sending command response")
             room.send_html(markdown(response), body=response, msgtype="m.notice")
-        except Exception as e:
-            log_warn("Unable to post to room:", e)
+        except:
+            log_warn("Unable to post to room:")
 
 def send_summary():
     """Sends a daily summary of MSCs to every room the bot is in"""
@@ -183,7 +183,7 @@ def reply_fcp_mscs(mscs):
                 # Check mscbot user id (retrieve from `curl -A 'mscbot' https://api.github.com/users/mscbot`) 
                 if comment.user.id == 40832866 or comment.user.id == 46318632: 
                     time = comment.created_at - timedelta(days=1)
-                    return
+                    break
 
             remaining_days = config["msc"]["fcp_length"] - (datetime.today() - time).days
             line = "[[MSC%d](%s)] - %s" % (msc.number, msc.url, msc.title)
