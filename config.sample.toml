@@ -8,7 +8,7 @@ token = ""
 
 [mscbot]
 # MSCBot web server (https://github.com/matrix-org/mscbot)
-url = "https://mscbot.matrix.org"
+url = "https://mscbot.amorgan.xyz"
 
 [matrix]
 # Bot user ID
