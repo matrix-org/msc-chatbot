@@ -62,8 +62,9 @@ def event_received(event):
         if (not command.startswith("show new") and
            not command.startswith("show pending") and
            not command.startswith("show fcp") and
-           not command.startswith("show active")):
-            room.send_html("Unknown command", msgtype="m.notice")
+           not command.startswith("show all") and
+           not command.startswith("help")):
+            room.send_html("Unknown command.", msgtype="m.notice")
             return
 
         # Retrieve MSC information from Github labels
@@ -76,8 +77,27 @@ def event_received(event):
                 response = reply_pending_mscs(mscs)
             elif command.startswith("show fcp"):
                 response = reply_fcp_mscs(mscs)
-            elif command.startswith("show active"):
-                response = reply_active_mscs(mscs)
+            elif command.startswith("show all"):
+                response = reply_all_mscs(mscs)
+            elif command.startswith("help"):
+                response = ("Available commands:\n\n" +
+                            "Show MSCs that still need review:\n\n"
+                            "<pre><code>" + 
+                            "show new" +
+                            "</pre></code>\n\n" + 
+                            "Show MSCs which are pending an FCP. These need review:\n\n" +
+                            "<pre><code>" + 
+                            "show pending" +
+                            "</pre></code>\n\n" + 
+                            "Show MSCs that are current in FCP:\n\n"
+                            "<pre><code>" + 
+                            "show fcp" +
+                            "</pre></code>\n\n" + 
+                            "Combined response of all of the above:\n\n" +
+                            "<pre><code>" + 
+                            "show all" +
+                            "</pre></code>\n\n" +
+                            "Summaries are shown every day at %s UTC" % config["bot"]["daily_summary_time"])
 
             # Send the response
             log_info("Sending command response")
@@ -94,7 +114,7 @@ def send_summary():
     # Get MSC metadata from Github labels
     mscs = get_mscs()
 
-    info = reply_active_mscs(mscs)
+    info = reply_all_mscs(mscs)
 
     if "msc_goal" in config["bot"]:
         # Count finished mscs
@@ -178,7 +198,7 @@ def reply_fcp_mscs(mscs):
 
     return response
 
-def reply_active_mscs(mscs):
+def reply_all_mscs(mscs):
     """Returns a formatted reply with MSCs that are proposed, pending or in FCP. Used as daily message."""
     global client
 
@@ -186,7 +206,7 @@ def reply_active_mscs(mscs):
     mscs = sorted(mscs, key=lambda msc: msc["issue"].number)
 
     # Display active MSCs by status: proposed, fcp pending, and fcp
-    response = "# Today's Active MSCs\n\n"
+    response = "# Today's MSC Status\n\n"
     response += reply_new_mscs(mscs)
     response += reply_pending_mscs(mscs)
     response += reply_fcp_mscs(mscs)
@@ -241,8 +261,15 @@ def main():
             return
 
     # Configure logging
-    logging.basicConfig(level=logging.INFO if config["logging"]["level"] != "DEBUG" else logging.DEBUG,
-                        format="[%(levelname)s] %(asctime)s: %(message)s")
+    # Determine whether we are using a logfile or not
+    logging_format = "[%(levelname)s] %(asctime)s: %(message)s"
+    if "logfile" in config["logging"]:
+        logging.basicConfig(level=logging.INFO if config["logging"]["level"] != "DEBUG" else logging.DEBUG,
+                            format=logging_format,
+                            filename=config["logging"]["logfile"])
+    else:
+        logging.basicConfig(level=logging.INFO if config["logging"]["level"] != "DEBUG" else logging.DEBUG,
+                            format=logging_format)
     logger = logging.getLogger()
 
     # Schedule daily summary messages

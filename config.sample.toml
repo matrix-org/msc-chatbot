@@ -31,3 +31,5 @@ fcp_length = 5
 [logging]
 # Logging level. "INFO" for default, "DEBUG" for debug logs
 level = "INFO"
+# Optional logfile. If set logs will not be printed to stdout
+#logfile = "mscbot.log"
