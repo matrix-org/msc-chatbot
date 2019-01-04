@@ -54,8 +54,7 @@ def event_received(event):
 
     body = event["content"]["body"].strip()
     room = client.get_rooms()[event["room_id"]]
-    user_id = config["matrix"]["user_id"]
-    username = user_id[1:user_id.index(":")]
+    username = config["bot"]["command"]
     if body.startswith(username + ":"):
         command = body[8:].strip()
         log_info("Received command:", command)

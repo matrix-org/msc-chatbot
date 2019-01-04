@@ -17,6 +17,8 @@ user_id = "@mscbot:matrix.org"
 token = ""
 
 [bot]
+# Bot command (Ex. "mscbot" means a user would write "mscbot: show all")
+command = "mscbot"
 # Print a daily summary at this time. Time in UTC
 daily_summary_time = "07:00"
 # Optional list of priority MSC IDs. ONLY these will be shown
