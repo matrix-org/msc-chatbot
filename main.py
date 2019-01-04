@@ -11,23 +11,38 @@ import schedule
 import time
 import toml
 import requests
+import logging
 
 client = None
 config = None
 github = None
 repo = None
 msc_labels = None
+logger = None
+
+# Custom variadic functions for logging purposes
+def log_info(*arg):
+    global logger
+    logger.info(' '.join(arg))
+
+def log_warn(*arg):
+    global logger
+    logger.warn(' '.join(arg))
+
+def log_fatal(*arg):
+    global logger
+    logger.fatal(' '.join(arg))
 
 def invite_received(room_id, state):
     """Matrix room invite received. Join the room"""
     global client
     time.sleep(3) # Workaround for Synapse#2807
     try:
-        print("Joining room:", room_id)
+        log_info("Joining room:", room_id)
         client.join_room(room_id)
     except Exception as e:
-        print("Unable to join room:", e)
-        print("Trying again...")
+        log_warn("Unable to join room:", e)
+        log_warn("Trying again...")
         time.sleep(5)
         invite_received(room_id, state)
 
@@ -43,7 +58,7 @@ def event_received(event):
     username = user_id[1:user_id.index(":")]
     if body.startswith(username + ":"):
         command = body[8:].strip()
-        print("Received command:", command)
+        log_info("Received command:", command)
         if (not command.startswith("show new") and
            not command.startswith("show pending") and
            not command.startswith("show fcp") and
@@ -53,11 +68,6 @@ def event_received(event):
 
         # Retrieve MSC information from Github labels
         mscs = get_mscs()
-
-        try:
-            room.send_html("Downloading data...", msgtype="m.notice")
-        except Exception as e:
-            print("Unable to say 'Downloading data':", e)
 
         try:
             if command.startswith("show new"):
@@ -70,20 +80,33 @@ def event_received(event):
                 response = reply_active_mscs(mscs)
 
             # Send the response
-            print("Sending")
+            log_info("Sending command response")
             room.send_html(markdown(response), body=response, msgtype="m.notice")
         except Exception as e:
-            print("Unable to post to room:", e)
+            log_warn("Unable to post to room:", e)
 
 def send_summary():
     """Sends a daily summary of MSCs to every room the bot is in"""
     # TODO: Ability to turn this on or off per room
     global client
+    global config
 
     # Get MSC metadata from Github labels
     mscs = get_mscs()
 
     info = reply_active_mscs(mscs)
+
+    if "msc_goal" in config["bot"]:
+        # Count finished mscs
+        completed_mscs = 0
+        for msc in mscs:
+            if (("proposal-in-review" not in msc["labels"] and
+               "proposed-final-comment-period" not in msc["labels"] and
+               "final-comment-period" not in msc["labels"]) or
+               "finished-final-comment-period" in msc["labels"]):
+               completed_mscs += 1
+        info += "\n\nr0 Progress: %d/%d" % (completed_mscs/config["bot"]["msc_goal"])
+
     for room in list(client.get_rooms().values):
         room.send_html(markdown(info), body=info, msgtype="m.notice")
 
@@ -96,12 +119,13 @@ def reply_new_mscs(mscs):
         if msc_labels["proposal-in-review"] in labels:
             new.append("[[MSC%d](%s)] - %s" % (msc.number, msc.url, msc.title))
 
+    response = "\n\n**New**\n\n"
     if len(new) > 0:
-        response = "\n\n**New**\n\n"
         response += '\n\n'.join(new)
-        return response
+    else:
+        response += "\n\nNo new MSCs."
 
-    return "No new MSCs."
+    return response
 
 def reply_pending_mscs(mscs):
     """Returns a formatted reply with MSCs that are currently pending a FCP"""
@@ -118,12 +142,13 @@ def reply_pending_mscs(mscs):
             line += "\n\nTo review: %s" % reviewers
             pending.append(line)
 
+    response = "\n\n**Pending Final Comment Period**\n\n"
     if len(pending) > 0:
-        response = "\n\n \n\n**Pending FCP**\n\n"
         response += '\n\n'.join(pending)
-        return response
+    else:
+        response += 'No MSCs pending FCP.'
 
-    return "No pending FCPs."
+    return response
 
 def reply_fcp_mscs(mscs):
     """Returns a formatted reply with all MSCs that are in the FCP"""
@@ -145,12 +170,13 @@ def reply_fcp_mscs(mscs):
             line += " - Ends in **%d %s**" % (remaining_days, "day" if remaining_days == 1 else "days")
             fcps.append(line)
 
+    response = "\n\n**In Final Comment Period**\n\n"
     if len(fcps) > 0:
-        response = "\n\n \n\n**Final Comment Period**\n\n"
         response += '\n\n'.join(fcps)
-        return response
+    else:
+        response += "No MSCs in FCP."
 
-    return "No ongoing FCPs."
+    return response
 
 def reply_active_mscs(mscs):
     """Returns a formatted reply with MSCs that are proposed, pending or in FCP. Used as daily message."""
@@ -164,7 +190,6 @@ def reply_active_mscs(mscs):
     response += reply_new_mscs(mscs)
     response += reply_pending_mscs(mscs)
     response += reply_fcp_mscs(mscs)
-    print(response)
     return response
 
 def get_mscs():
@@ -177,6 +202,9 @@ def get_mscs():
     issues = []
     for label in msc_labels.values():
         for issue in repo.get_issues(labels=list([label])):
+            # Skip non-priority issues if priority is defined
+            if "priority_mscs" in config["bot"] and issue.number not in config["bot"]["priority_mscs"]:
+                continue
             issues.append(issue)
 
     # Create a list relating an issue to its possible FCP information (FCP info added later)
@@ -188,10 +216,10 @@ def get_mscs():
     r = requests.get(config['mscbot']['url'] + "/api/all")
     fcp_info = r.json()
     for issue in issues:
+        # Link MSC to FCP metadata if current in ongoing FCP
         if msc_labels["proposed-final-comment-period"] in issue["labels"]:
             for fcp in fcp_info:
                 if issue["issue"].number == fcp["issue"]["number"]:
-                    # Link issue to FCP metadata
                     issue["fcp"] = fcp
 
     return issues
@@ -202,13 +230,20 @@ def main():
     global github
     global repo
     global msc_labels
+    global logger
 
     # Retrieve login information from config file
     with open("config.toml", "r") as f:
         try:
             config = toml.loads(f.read())
         except Exception as e:
-            print("Error reading config file:", e)
+            log_fatal("Error reading config file:", e)
+            return
+
+    # Configure logging
+    logging.basicConfig(level=logging.INFO if config["logging"]["level"] != "DEBUG" else logging.DEBUG,
+                        format="[%(levelname)s] %(asctime)s: %(message)s")
+    logger = logging.getLogger()
 
     # Schedule daily summary messages
     schedule.every().day.at(config["bot"]["daily_summary_time"]).do(send_summary)
@@ -216,7 +251,7 @@ def main():
     # Login to Github
     github = Github(config["github"]["token"])
     repo = github.get_repo(config["github"]["repo"])
-    print("Connected to Github")
+    log_info("Connected to Github")
 
     # Get MSC-related label objects from specified Github repository
     labels = (["proposal-in-review",
@@ -232,15 +267,15 @@ def main():
     # Login to Matrix and listen for messages
     homeserver = "https://" + config["matrix"]["user_id"].split(":")[-1]
     client = MatrixClient(homeserver, user_id=config["matrix"]["user_id"], token=config["matrix"]["token"])
-    print("Connected to Matrix")
+    log_info("Connected to Matrix")
     client.add_invite_listener(invite_received)
     client.add_listener(event_received, event_type="m.room.message")
-    client.listen_forever()
 
-    print("Now churning") # Do we need to move a sync request into this loop?
+    # Sync continuously and check time for daily summary sending
     while True:
+        client.listen_for_events()
         schedule.run_pending()
-        time.sleep(60) # Wait one minute between checking time
+        time.sleep(5) # Wait a few seconds between syncs
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-# Configuration variables. All are required
+# Configuration variables
 
 [github]
 # Proposal repository
@@ -19,7 +19,15 @@ token = ""
 [bot]
 # Print a daily summary at this time. Time in UTC
 daily_summary_time = "07:00"
+# Optional list of priority MSC IDs. ONLY these will be shown
+#priority_mscs = [1693, 1759]
+# Optional list of remaining MSCs. Requires priority_mscs to be defined
+#msc_goal = 5
 
 [msc]
 # Duration of a final comment period
 fcp_length = 5
+
+[logging]
+# Logging level. "INFO" for default, "DEBUG" for debug logs
+level = "INFO"
