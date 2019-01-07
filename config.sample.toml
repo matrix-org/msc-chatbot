@@ -17,6 +17,8 @@ user_id = "@mscbot:matrix.org"
 token = ""
 
 [bot]
+# Room-specific data file path
+data_filepath = "./room_data.json"
 # Bot command (Ex. "mscbot" means a user would write "mscbot: show all")
 command = "mscbot"
 # Print a daily summary at this time. Time in UTC

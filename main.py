@@ -10,8 +10,10 @@ from github import Github
 import schedule
 import time
 import toml
+import json
 import requests
 import logging
+import os
 
 client = None
 config = None
@@ -19,6 +21,8 @@ github = None
 repo = None
 msc_labels = None
 logger = None
+# Room ID to room-settings dictionary mapping
+room_specific_data = {}
 
 # Custom variadic functions for logging purposes
 def log_info(*args):
@@ -32,6 +36,32 @@ def log_warn(*args):
 def log_fatal(*args):
     global logger
     logger.fatal(' '.join([str(arg) for arg in args]))
+
+def update_room_setting(room_id, setting_dict):
+    """
+    Update a room-specific setting and save to disk. Params are room ID
+    string and a dictionary with custom key/value data.
+    """
+    global config
+    global room_specific_data
+
+    # Update or insert settings dict under room_id key
+    if room_id not in room_specific_data:
+        room_specific_data[room_id] = setting_dict
+    else:
+        room_specific_data[room_id].update(setting_dict)
+
+    # Backup old room data if available
+    data_filepath = config["bot"]["data_filpath"]
+    if os.path.exists(data_filepath):
+        os.rename(data_filepath, data_filepath + ".bak")
+
+    # Save updated data to disk
+    try:
+        with open(data_filepath, 'w') as f:
+            json.dump(room_specific_data, f)
+    except:
+        log_warn("Unable to save room data to disk")
 
 def invite_received(room_id, state):
     """Matrix room invite received. Join the room"""
@@ -254,6 +284,7 @@ def main():
     global repo
     global msc_labels
     global logger
+    global room_specific_data
 
     # Retrieve login information from config file
     with open("config.toml", "r") as f:
@@ -262,6 +293,14 @@ def main():
         except Exception as e:
             log_fatal("Error reading config file:", e)
             return
+
+    # Retrieve room-specific data
+    try:
+        data_filepath = config["bot"]["data_filepath"]
+        with open(data_filepath, 'r') as f:
+            room_specific_data = json.loads(f.read())
+    except:
+        log_info("No data file path found. Using defaults")
 
     # Configure logging
     # Determine whether we are using a logfile or not
