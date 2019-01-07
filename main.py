@@ -40,11 +40,11 @@ known_commands = {
     "HELP": ["help", "show help"],
 
     # Room-specific commands
-    "ROOM_SUMMARY_CONTENT": ["set summary content"],
+    "ROOM_SUMMARY_CONTENT": ["set summary content", "set summary mode"],
     "ROOM_SUMMARY_ENABLE": ["set enable summary", "set summary enable", "set summary enabled"],
     "ROOM_SUMMARY_DISABLE": ["set disable summary", "set summary disable", "set summary disabled"],
     "ROOM_SUMMARY_TIME": ["set time summary", "set summary time", "set summary time to"],
-    "ROOM_SUMMARY_TIME_INFO": ["show summary time", "summary time", "get summary time"],
+    "ROOM_SUMMARY_TIME_INFO": ["summary time", "get summary time"],
     "ROOM_SHOW_PRIORITY": ["show priority", "priority", "priorities"],
     "ROOM_PRIORITY_MSCS": ["set priority mscs", "set priority"],
 }
