@@ -6,7 +6,8 @@ repo = "matrix-org/matrix-doc"
 # Github bot user token
 token = ""
 # Labels involved in the MSC process
-labels = ["proposal-in-review",
+labels = ["proposal",
+          "proposal-in-review",
           "proposed-final-comment-period",
           "final-comment-period",
           "finished-final-comment-period",

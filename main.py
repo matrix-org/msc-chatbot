@@ -472,7 +472,7 @@ def send_summary(room_id):
         info = reply_pending_mscs(mscs)
     elif mode == "fcp":
         info = reply_fcp_mscs(mscs)
-    elif mode == "all":
+    elif mode == "all" or mode == None: # Default to mode 'all'
         info = reply_all_mscs(mscs)
     else:
         log_warn("Unknown summary mode for room %s: %s" % (room_id, mode), trace=False)
