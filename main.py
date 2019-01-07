@@ -127,7 +127,10 @@ def send_summary():
         info += "\n\nr0 Progress: %d/%d" % (completed_mscs, config["bot"]["msc_goal"])
 
     for room in list(client.get_rooms().values()):
-        room.send_html(markdown(info), body=info, msgtype="m.notice")
+        try:
+            room.send_html(markdown(info), body=info, msgtype="m.notice")
+        except:
+            log_warn("Unable to send daily summary")
 
 def reply_new_mscs(mscs):
     """Returns a formatted reply with MSCs that are proposed but not yet pending an FCP"""
@@ -300,7 +303,10 @@ def main():
 
     # Sync continuously and check time for daily summary sending
     while True:
-        client.listen_for_events()
+        try:
+            client.listen_for_events()
+        except:
+            log_warn("Unable to contact /sync")
         schedule.run_pending()
         time.sleep(5) # Wait a few seconds between syncs
 
