@@ -3,3 +3,4 @@ pygithub>=1.43.4
 matrix-client>=0.3.2
 toml>=0.10.0
 Markdown>=3.0.1
+parsedatetime>=2.4

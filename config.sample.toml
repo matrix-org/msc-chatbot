@@ -5,6 +5,14 @@
 repo = "matrix-org/matrix-doc"
 # Github bot user token
 token = ""
+# Labels involved in the MSC process
+labels = ["proposal-in-review",
+          "proposed-final-comment-period",
+          "final-comment-period",
+          "finished-final-comment-period",
+          "spec-pr-missing",
+          "spec-pr-in-review",
+          "merged"]
 
 [mscbot]
 # MSCBot web server (https://github.com/matrix-org/mscbot)
@@ -13,20 +21,18 @@ url = "https://mscbot.amorgan.xyz"
 [matrix]
 # Bot user ID
 user_id = "@mscbot:matrix.org"
-# Bot token
+# Bot access token
 token = ""
+# Interval between /sync requests.
+sync_interval = 5
 
 [bot]
 # Room-specific data file path
 data_filepath = "./room_data.json"
 # Bot command (Ex. "mscbot" means a user would write "mscbot: show all")
 command = "mscbot"
-# Print a daily summary at this time. Time in UTC
+# Default daily summary time (UTC). Can be configured or disabled per-room.
 daily_summary_time = "07:00"
-# Optional list of priority MSC IDs. ONLY these will be shown
-#priority_mscs = [1693, 1759]
-# Optional list of remaining MSCs. Requires priority_mscs to be defined
-#msc_goal = 5
 
 [msc]
 # Duration of a final comment period in days
@@ -35,5 +41,5 @@ fcp_length = 5
 [logging]
 # Logging level. "INFO" for default, "DEBUG" for debug logs
 level = "INFO"
-# Optional logfile. If set logs will not be printed to stdout
+# Optional logfile. If set, logs will not be printed to stdout
 #logfile = "mscbot.log"
