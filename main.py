@@ -38,7 +38,7 @@ room_specific_data = {}
 # command text
 known_commands = {
     # General bot commands
-    "SHOW_NEW": ["show new"],
+    "SHOW_IN_PROGRESS": ["show in-progress"],
     "SHOW_PENDING": ["show pending"],
     "SHOW_FCP": ["show fcp", "show in fcp"],
     "SHOW_ALL": ["show all", "show active"],
@@ -196,8 +196,8 @@ def event_received(event):
         # Retrieve MSC information from Github labels
         mscs = get_mscs(room_id)
 
-        if command_id == "SHOW_NEW":
-            response = reply_new_mscs(mscs)
+        if command_id == "SHOW_IN_PROGRESS":
+            response = reply_in_progress_mscs(mscs)
         elif command_id == "SHOW_PENDING":
             response = reply_pending_mscs(mscs)
         elif command_id == "SHOW_FCP":
@@ -241,7 +241,7 @@ def show_help(room_id):
 **MSCs**
 
 Show MSCs that are still being finalized:
-<pre><code>show new
+<pre><code>show in-progress
 </code></pre>
 
 Show MSCs which are pending a FCP. These need review from team members:
@@ -298,13 +298,13 @@ Show the currently configured daily summary time:
 
 Set the content a daily summary will contain:
 
-<pre><code>set summary content all|pending|fcp|new
+<pre><code>set summary content all|pending|fcp|in-progress
 </code></pre>
 
 all: All MSCs currently in-flight<br>
 pending: MSCs that are currently being voted on for an FCP<br>
 fcp: MSCs that are currently in FCP<br>
-new: MSCs that are currently in the discussion phase
+in-progress: MSCs that are currently in the discussion phase
 
 **Other**
 
@@ -367,13 +367,13 @@ def room_show_priority(room_id, arguments):
 def room_summary_content(room_id, arguments):
     """Room-specific option for daily summary contents"""
 
-    allowed = ["all", "pending", "fcp", "new"]
+    allowed = ["all", "pending", "fcp", "in-progress"]
 
     if len(arguments) == 0 or arguments[0] not in allowed:
         return ("""
 Invalid or unknown summary content option.
         
-Usage: `set summary content: [all, pending, fcp, new]`""")
+Usage: `set summary content: [all, pending, fcp, in-progress]`""")
 
     update_room_setting(room_id, {"summary_content": arguments[0]})
     return "Summary content updated successfully to '%s'." % arguments[0]
@@ -472,8 +472,8 @@ def send_summary(room_id):
 
     # See which summary mode this room wants
     mode = get_room_setting(room_id, "summary_content")
-    if mode == "new":
-        info = reply_new_mscs(mscs)
+    if mode == "in-progress":
+        info = reply_in_progress_mscs(mscs)
     elif mode == "pending":
         info = reply_pending_mscs(mscs)
     elif mode == "fcp":
@@ -513,20 +513,20 @@ def send_summary(room_id):
 
     return True
 
-def reply_new_mscs(mscs):
+def reply_in_progress_mscs(mscs):
     """Returns a formatted reply with MSCs that are proposed but not yet pending an FCP"""
-    new = []
+    in_progress = []
     for msc_dict in mscs:
         msc = msc_dict["issue"]
         labels = msc_dict["labels"]
         if msc_labels["proposal-in-review"] in labels:
-            new.append("[[MSC%d](%s)] - %s" % (msc.number, msc.html_url, msc.title))
+            in_progress.append("[[MSC%d](%s)] - %s" % (msc.number, msc.html_url, msc.title))
 
-    response = "\n\n**New**\n\n"
-    if len(new) > 0:
-        response += '\n\n'.join(new)
+    response = "\n\n**In Progress**\n\n"
+    if len(in_progress) > 0:
+        response += '\n\n'.join(in_progress)
     else:
-        response += "\n\nNo new MSCs."
+        response += "\n\nNo in-progress MSCs."
 
     return response
 
@@ -571,7 +571,10 @@ def reply_fcp_mscs(mscs):
 
             remaining_days = config["msc"]["fcp_length"] - (datetime.today() - time).days
             line = "[[MSC%d](%s)] - %s" % (msc.number, msc.html_url, msc.title)
-            line += " - Ends in **%d %s**" % (remaining_days, "day" if remaining_days == 1 else "days")
+            if remaining_days > 0:
+                line += " - Ends in **%d %s**" % (remaining_days, "day" if remaining_days == 1 else "days")
+            else:
+                line += " - Ends **today**"
             fcps.append(line)
 
     response = "\n\n**In Final Comment Period**\n\n"
@@ -591,7 +594,7 @@ def reply_all_mscs(mscs):
 
     # Display active MSCs by status: proposed, fcp pending, and fcp
     response = "# Today's MSC Status\n\n"
-    response += reply_new_mscs(mscs)
+    response += reply_in_progress_mscs(mscs)
     response += reply_pending_mscs(mscs)
     response += reply_fcp_mscs(mscs)
     return response
