@@ -1,3 +1,3 @@
 config.toml
-room_data.json
+room_data.json*
 *.log

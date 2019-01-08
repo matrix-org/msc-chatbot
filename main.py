@@ -18,11 +18,17 @@ import logging
 import sys
 import os
 
+# Matrix client
 client = None
-config = None
+# Github API client
 github = None
+# Github repo object
 repo = None
+# Github Label objects for each label in the repo
 msc_labels = None
+# Config file object
+config = None
+# Logger object
 logger = None
 # Room ID to room-settings dictionary mapping
 room_specific_data = {}
@@ -614,7 +620,7 @@ def get_mscs(room_id=None):
 
     # Create a list relating an issue to its possible FCP information (FCP info added later)
     issues = [({"issue": issue,
-                "labels": list(issue.get_labels()),
+                "labels": list(issue.labels),
                 "fcp": None}) for issue in issues]
 
     # Link issues to metadata from MSCBot
