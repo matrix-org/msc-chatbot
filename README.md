@@ -34,7 +34,7 @@ mscbot: <command>
 
 ### Available Commands
 
-`show new` - Show MSCs that are still being finalized.
+`show in-progress` - Show MSCs that are still being finalized.
 
 `show pending` - Show MSCs which are pending a FCP. These need review from team members.
 
