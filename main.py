@@ -7,6 +7,7 @@ from matrix_client.client import MatrixClient
 from datetime import datetime, timedelta
 from markdown import markdown
 from github import Github
+from time import mktime
 import traceback
 import parsedatetime
 import schedule
@@ -43,6 +44,7 @@ known_commands = {
     "SHOW_FCP": ["show fcp", "show in fcp"],
     "SHOW_ALL": ["show all", "show active"],
     "SHOW_SUMMARY": ["show summary", "summarize", "summary", "summarise"],
+    "SHOW_NEWS": ["show news"],
     "HELP": ["help", "show help"],
 
     # Room-specific commands
@@ -155,7 +157,7 @@ def match_command(command):
                 return key
     return None
 
-def process_cmd_text(room_id, command, handler, command_id):
+def process_args(room_id, command, handler, command_id):
     """
     Pre-process command text to only retrieve command arguments and pass them
     to handler function
@@ -204,22 +206,24 @@ def event_received(event):
             response = reply_fcp_mscs(mscs)
         elif command_id == "SHOW_ALL":
             response = reply_all_mscs(mscs)
+        elif command_id == "SHOW_NEWS":
+            response = process_args(room_id, command, reply_news, "SHOW_NEWS")
         elif command_id == "HELP":
             response = show_help(room_id)
         elif command_id == "ROOM_SUMMARY_CONTENT":
-            response = process_cmd_text(room_id, command, room_summary_content, "ROOM_SUMMARY_CONTENT")
+            response = process_args(room_id, command, room_summary_content, "ROOM_SUMMARY_CONTENT")
         elif command_id == "ROOM_SUMMARY_ENABLE":
-            response = process_cmd_text(room_id, command, room_summary_enable, "ROOM_SUMMARY_ENABLE")
+            response = process_args(room_id, command, room_summary_enable, "ROOM_SUMMARY_ENABLE")
         elif command_id == "ROOM_SUMMARY_DISABLE":
-            response = process_cmd_text(room_id, command, room_summary_disable, "ROOM_SUMMARY_DISABLE")
+            response = process_args(room_id, command, room_summary_disable, "ROOM_SUMMARY_DISABLE")
         elif command_id == "ROOM_SUMMARY_TIME":
-            response = process_cmd_text(room_id, command, room_summary_time, "ROOM_SUMMARY_TIME")
+            response = process_args(room_id, command, room_summary_time, "ROOM_SUMMARY_TIME")
         elif command_id == "ROOM_SUMMARY_TIME_INFO":
-            response = process_cmd_text(room_id, command, room_summary_time_info, "ROOM_SUMMARY_TIME_INFO")
+            response = process_args(room_id, command, room_summary_time_info, "ROOM_SUMMARY_TIME_INFO")
         elif command_id == "ROOM_SHOW_PRIORITY":
-            response = process_cmd_text(room_id, command, room_show_priority, "ROOM_SHOW_PRIORITY")
+            response = process_args(room_id, command, room_show_priority, "ROOM_SHOW_PRIORITY")
         elif command_id == "ROOM_PRIORITY_MSCS":
-            response = process_cmd_text(room_id, command, room_priority_mscs, "ROOM_PRIORITY_MSCS")
+            response = process_args(room_id, command, room_priority_mscs, "ROOM_PRIORITY_MSCS")
         elif command_id == "SHOW_SUMMARY":
             send_summary(room_id)
             return # send_summary sends its own message
@@ -262,6 +266,16 @@ Combined response of all of the above:
 Show the summary once for this room, whether it is enabled daily or not:
 
 <pre><code>show summary
+</code></pre>
+
+Show a news digest of MSC statuses since some time ago:
+
+<pre><code>show news since 1 week ago|last friday|2 days ago|etc.
+</code></pre>
+
+or for just the past week, simply:
+
+<pre><code>show news
 </code></pre>
 
 **Per-room Bot Options**
@@ -599,6 +613,116 @@ def reply_all_mscs(mscs):
     response += reply_fcp_mscs(mscs)
     return response
 
+def reply_news(room_id, arguments):
+    """Generates a report for MSC status changes over a given time period"""
+
+    # If no time arguments supplied, just default to activity over the last week
+    if len(arguments) == 0:
+        from_time = "1 week ago"
+        until_time = "now"
+    else:
+        # Time range syntax. e.g "from <time> to <time>"
+        if len(arguments) >= 4 and arguments[0] == "from":
+            index = arguments.index("to")
+            from_time = ' '.join(arguments[1:index])
+            until_time = ' '.join(arguments[index+1:])
+        # Since syntax. e.g "since 1 week ago"
+        elif arguments[0] == "since":
+            from_time = ' '.join(arguments[1:])
+            until_time = "now"
+
+    # Parse string to datetime objects
+    try:
+        # Parse into time.tm_struct objects
+        cal = parsedatetime.Calendar()
+        from_time = cal.parse(from_time)[0]
+        until_time = cal.parse(until_time)[0]
+
+        # Convert to datetime objects
+        from_time = datetime.fromtimestamp(mktime(from_time))
+        until_time = datetime.fromtimestamp(mktime(until_time))
+    except Exception:
+        err_string = "Unable to parse '%s' and/or '%s' as time" % (from_time, until_time)
+        log_warn(err_string)
+        return err_string
+
+    # Download all MSC issue/prs
+    mscs = get_mscs(room_id)
+
+    # Download github events for each msc
+    issue_events = get_label_events([i["issue"] for i in mscs], from_time, until_time).values()
+    
+    approved_labels = ["finished-final-comment-period",
+                       "spec-pr-missing",
+                       "spec-pr-in-review",
+                       "merged"]
+    in_progress_labels = ["proposal", "proposal-in-review"]
+
+    approved = [i["issue"] for i in issue_events if i["label"] in approved_labels]
+    fcp = [i["issue"] for i in issue_events if i["label"] == "final-comment-period"]
+    in_progress = [i["issue"] for i in issue_events if i["label"] in in_progress_labels]
+
+    approved = '\n'.join(["[[MSC %s]: %s](%s)" % (i.number, i.title, i.html_url) for i in approved])
+    fcp = '\n'.join(["[MSC %s: %s](%s)" % (i.number, i.title, i.html_url) for i in fcp])
+    in_progress = '\n'.join(["[[MSC %s]: %s](%s)" % (i.number, i.title, i.html_url) for i in in_progress])
+
+    response = """News from **%s** til **%s**.
+    
+<pre><code>
+**Approved MSCs**
+
+%s
+
+**Final Comment Period**
+
+%s
+
+**In Progress MSCs**
+
+%s
+
+</code></pre>""" % (str(from_time), str(until_time), approved, fcp, in_progress)
+
+    return response
+
+def get_label_events(issues, date_from, date_to):
+    """
+    Retrieves github label-added events for a list of github issues within a
+    specified time period
+    """
+    # list of (issue: "label-name")
+    global msc_labels
+
+    # Iterate through issues and retrieve their event timelines
+    issue_states = {}
+    for i in issues:
+        labels = set()
+        for e in i.get_events():
+            # Make sure this is a label-change event
+            if e.event != 'labeled':
+                continue
+
+            # Make sure this is a label we actually care about
+            if e.label.name not in config["github"]["labels"]:
+                continue
+
+            # Label was added at some point
+            labels.add(e.label.name)
+
+            # Ignore events not in the requested time period
+            if e.created_at < date_from or e.created_at >= date_to:
+                continue
+
+            # Get date event occured
+            date = e.created_at.date()
+
+            # Record this label change with a date.
+            # Could be overwritten by later state changes if they too ocurred
+            # in the requested time period
+            issue_states[i.number] = {"issue": i, "date": date, "label": e.label.name}
+
+    return issue_states
+
 def get_mscs(room_id=None):
     """
     Get up to date MSC metadata from Github.
@@ -630,7 +754,7 @@ def get_mscs(room_id=None):
     r = requests.get(config['mscbot']['url'] + "/api/all")
     fcp_info = r.json()
     for issue in issues:
-        # Link MSC to FCP metadata if current in ongoing FCP
+        # Link MSC to FCP metadata if currently in proposed FCP
         if msc_labels["proposed-final-comment-period"] in issue["labels"]:
             for fcp in fcp_info:
                 if issue["issue"].number == fcp["issue"]["number"]:
