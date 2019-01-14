@@ -518,9 +518,9 @@ def send_summary(room_id):
                 continue
 
             # Check if this MSC has passed final comment period
-            if (("proposal-in-review" not in msc["labels"] and
-               "proposed-final-comment-period" not in msc["labels"] and
-               "final-comment-period" not in msc["labels"]) or
+            if ((msc_labels["proposal-in-review"] not in msc["labels"] and
+               msc_labels["proposed-final-comment-period"] not in msc["labels"] and
+               msc_labels["final-comment-period"] not in msc["labels"]) or
                "finished-final-comment-period" in msc["labels"]):
                completed_mscs += 1
 
