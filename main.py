@@ -371,12 +371,20 @@ def room_priority_mscs(room_id, arguments):
 
 def room_show_priority(room_id, arguments):
     """Show the currently-set priority MSCs for a room"""
+    global config
+
     priority_mscs = get_room_setting(room_id, "priority_mscs")
 
-    if priority_mscs:
-        return "Currently set priority MSCs: %s" % str(priority_mscs)
+    if not priority_mscs:
+        return "No priority MSCs set."
 
-    return "No priority MSCs set."
+    response = "["
+    for msc in priority_mscs:
+        response += "[%d](https://github.com/%s/pull/%d), " % (msc, config["github"]["repo"], msc)
+    response = response[:-2] + "]"
+
+    return "Currently set priority MSCs: %s" % response
+
 
 def room_summary_content(room_id, arguments):
     """Room-specific option for daily summary contents"""
@@ -682,6 +690,9 @@ def reply_news(room_id, arguments):
 %s
 
 </code></pre>""" % (str(from_time), str(until_time), approved, fcp, in_progress)
+
+    if get_room_setting(room_id, "priority_mscs"):
+        response += "\n\nBe aware that there are priority MSCs enabled in this room, and that you may not be seeing all available MSC news."
 
     return response
 
