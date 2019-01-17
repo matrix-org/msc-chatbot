@@ -45,6 +45,7 @@ known_commands = {
     "SHOW_ALL": ["show all", "show active"],
     "SHOW_SUMMARY": ["show summary", "summarize", "summary", "summarise"],
     "SHOW_NEWS": ["show news"],
+    "SHOW_TASKS": ["show tasks"],
     "HELP": ["help", "show help"],
 
     # Room-specific commands
@@ -157,7 +158,7 @@ def match_command(command):
                 return key
     return None
 
-def process_args(room_id, command, handler, command_id):
+def process_args(room_id, command, mscs, handler, command_id):
     """
     Pre-process command text to only retrieve command arguments and pass them
     to handler function
@@ -175,7 +176,7 @@ def process_args(room_id, command, handler, command_id):
     # Clean up any spaces
     arguments = [arg.strip() for arg in arguments]
 
-    return handler(room_id, arguments)
+    return handler(room_id, arguments, mscs)
 
 def event_received(event):
     """Matrix event received. Act if it was directed at us"""
@@ -207,23 +208,25 @@ def event_received(event):
         elif command_id == "SHOW_ALL":
             response = reply_all_mscs(mscs)
         elif command_id == "SHOW_NEWS":
-            response = process_args(room_id, command, reply_news, "SHOW_NEWS")
+            response = process_args(room_id, command, mscs, reply_news, "SHOW_NEWS")
+        elif command_id == "SHOW_TASKS":
+            response = process_args(room_id, command, mscs, reply_tasks, "SHOW_TASKS")
         elif command_id == "HELP":
             response = show_help(room_id)
         elif command_id == "ROOM_SUMMARY_CONTENT":
-            response = process_args(room_id, command, room_summary_content, "ROOM_SUMMARY_CONTENT")
+            response = process_args(room_id, command, mscs, room_summary_content, "ROOM_SUMMARY_CONTENT")
         elif command_id == "ROOM_SUMMARY_ENABLE":
-            response = process_args(room_id, command, room_summary_enable, "ROOM_SUMMARY_ENABLE")
+            response = process_args(room_id, command, mscs, room_summary_enable, "ROOM_SUMMARY_ENABLE")
         elif command_id == "ROOM_SUMMARY_DISABLE":
-            response = process_args(room_id, command, room_summary_disable, "ROOM_SUMMARY_DISABLE")
+            response = process_args(room_id, command, mscs, room_summary_disable, "ROOM_SUMMARY_DISABLE")
         elif command_id == "ROOM_SUMMARY_TIME":
-            response = process_args(room_id, command, room_summary_time, "ROOM_SUMMARY_TIME")
+            response = process_args(room_id, command, mscs, room_summary_time, "ROOM_SUMMARY_TIME")
         elif command_id == "ROOM_SUMMARY_TIME_INFO":
-            response = process_args(room_id, command, room_summary_time_info, "ROOM_SUMMARY_TIME_INFO")
+            response = process_args(room_id, command, mscs, room_summary_time_info, "ROOM_SUMMARY_TIME_INFO")
         elif command_id == "ROOM_SHOW_PRIORITY":
-            response = process_args(room_id, command, room_show_priority, "ROOM_SHOW_PRIORITY")
+            response = process_args(room_id, command, mscs, room_show_priority, "ROOM_SHOW_PRIORITY")
         elif command_id == "ROOM_PRIORITY_MSCS":
-            response = process_args(room_id, command, room_priority_mscs, "ROOM_PRIORITY_MSCS")
+            response = process_args(room_id, command, mscs, room_priority_mscs, "ROOM_PRIORITY_MSCS")
         elif command_id == "SHOW_SUMMARY":
             send_summary(room_id)
             return # send_summary sends its own message
@@ -276,6 +279,11 @@ Show a news digest of MSC statuses since some time ago:
 or for just the past week, simply:
 
 <pre><code>show news
+</code></pre>
+
+To show MSC tasks that must still be completed:
+
+<pre><code>show tasks [github username]
 </code></pre>
 
 **Per-room Bot Options**
@@ -552,7 +560,7 @@ def reply_in_progress_mscs(mscs):
 
     return response
 
-def reply_pending_mscs(mscs):
+def reply_pending_mscs(mscs, user=None):
     """Returns a formatted reply with MSCs that are currently pending a FCP"""
     pending = []
     for msc_dict in mscs:
@@ -561,10 +569,19 @@ def reply_pending_mscs(mscs):
         fcp = msc_dict["fcp"]
         if msc_labels["proposed-final-comment-period"] in labels and fcp != None:
             # Show proposed FCPs and team members who have yet to agree
+            # If a specific github user was specified, filter by FCPs that that
+            # user needs to review
             # TODO: Show concern count
-            reviewers = ", ".join([x[0]["login"] for x in fcp["reviews"] if x[1] == False])
+            reviewers = [x[0]["login"] for x in fcp["reviews"] if x[1] == False]
+            if user and user not in reviewers:
+                continue
             line = "[[MSC%d](%s)] - %s - *%s*" % (msc.number, msc.html_url, msc.title, fcp["fcp"]["disposition"])
+
+            # Convert list to a comma separated string
+            reviewers = ", ".join(reviewers)
             line += "\n\nTo review: %s" % reviewers
+
+            # Add to response
             pending.append(line)
 
     response = "\n\n**Pending Final Comment Period**\n\n"
@@ -619,6 +636,25 @@ def reply_all_mscs(mscs):
     response += reply_in_progress_mscs(mscs)
     response += reply_pending_mscs(mscs)
     response += reply_fcp_mscs(mscs)
+    return response
+
+def reply_tasks(room_id, arguments, mscs):
+    """
+    Returns a formatted reply with in-progress MSCs that everyone should look
+    at, as well as MSCs which are waiting on a FCP review from the given
+    github username. If a github user is not specified in the command args,
+    it will print information available for all users.
+    """
+    # Return in-progress MSCs no matter what
+    response = reply_in_progress_mscs(mscs)
+    
+    # If no user specified, return all pending FCPs
+    if len(arguments) == 0:
+        response += reply_pending_mscs(mscs)
+    # Otherwise, return only pending FCPs that contain the given github user
+    else:
+        response += reply_pending_mscs(mscs, user=arguments[0])
+    
     return response
 
 def reply_news(room_id, arguments):
