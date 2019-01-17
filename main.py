@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from markdown import markdown
 from github import Github
 from time import mktime
+import feedparser
 import traceback
 import parsedatetime
 import schedule
@@ -273,15 +274,17 @@ Show the summary once for this room, whether it is enabled daily or not:
 
 Show a news digest of MSC statuses since some time ago:
 
-<pre><code>show news since 1 week ago|last friday|2 days ago|etc.
+<pre><code>show news [from (time) to (time)] [since (time)]
 </code></pre>
 
-or for just the past week, simply:
+Valid `time`s are `1 week ago`, `last friday`, `2 days ago`, etc.
 
-<pre><code>show news
+Or as a helper tool for TWIM authors, to show happening since the last TWIM post:
+
+<pre><code>show news twim
 </code></pre>
 
-To show MSC tasks that must still be completed:
+Show MSC tasks that must still be completed:
 
 <pre><code>show tasks [github username]
 </code></pre>
@@ -351,7 +354,7 @@ Show this help:
     return response
 
 # Room Specific Commands
-def room_priority_mscs(room_id, arguments):
+def room_priority_mscs(room_id, arguments, mscs):
     """Room-specific option to filter output by specific MSC numbers"""
     if len(arguments) == 0:
         return "Unknown MSC numbers. Usage: set priority 123, 456, 555, 12"
@@ -377,7 +380,7 @@ def room_priority_mscs(room_id, arguments):
     update_room_setting(room_id, {"priority_mscs": numbers})
     return "Priority MSCs set: %s" % str(numbers)
 
-def room_show_priority(room_id, arguments):
+def room_show_priority(room_id, arguments, mscs):
     """Show the currently-set priority MSCs for a room"""
     global config
 
@@ -394,7 +397,7 @@ def room_show_priority(room_id, arguments):
     return "Currently set priority MSCs: %s" % response
 
 
-def room_summary_content(room_id, arguments):
+def room_summary_content(room_id, arguments, mscs):
     """Room-specific option for daily summary contents"""
 
     allowed = ["all", "pending", "fcp", "in-progress"]
@@ -408,17 +411,17 @@ Usage: `set summary content: [all, pending, fcp, in-progress]`""")
     update_room_setting(room_id, {"summary_content": arguments[0]})
     return "Summary content updated successfully to '%s'." % arguments[0]
 
-def room_summary_enable(room_id, arguments):
+def room_summary_enable(room_id, arguments, mscs):
     """Enable daily summary for this room"""
     update_room_setting(room_id, {"summary_enabled": True})
     return "Daily summary enabled."
 
-def room_summary_disable(room_id, arguments):
+def room_summary_disable(room_id, arguments, mscs):
     """Disable daily summary for this room"""
     update_room_setting(room_id, {"summary_enabled": False})
     return "Daily summary disabled."
 
-def room_summary_time_info(room_id, arguments):
+def room_summary_time_info(room_id, arguments, mscs):
     """Show current summary time configured for this room"""
     global room_specific_data
     global config
@@ -436,7 +439,7 @@ def room_summary_time_info(room_id, arguments):
 
     return response
 
-def room_summary_time(room_id, arguments):
+def room_summary_time(room_id, arguments, mscs):
     """Set the daily time for the room summary"""
     if len(arguments) == 0:
         return ("""
@@ -657,13 +660,24 @@ def reply_tasks(room_id, arguments, mscs):
     
     return response
 
-def reply_news(room_id, arguments):
+def reply_news(room_id, arguments, mscs):
     """Generates a report for MSC status changes over a given time period"""
-
+    
     # If no time arguments supplied, just default to activity over the last week
     if len(arguments) == 0:
         from_time = "1 week ago"
         until_time = "now"
+    elif arguments[0].lower() == "twim":
+        # Get events since last TWIM
+        until_time = "now"
+
+        # Get last TWIM blog post time from RSS
+        try:
+            feed = feedparser.parse("https://matrix.org/blog/category/this-week-in-matrix/feed/")
+            from_time = feed["entries"][0]["published"]
+        except:
+            log_warn("Feed parsing error")
+            return "Unable to parse last TWIM post date"
     else:
         # Time range syntax. e.g "from <time> to <time>"
         if len(arguments) >= 4 and arguments[0] == "from":
@@ -689,9 +703,6 @@ def reply_news(room_id, arguments):
         err_string = "Unable to parse '%s' and/or '%s' as time" % (from_time, until_time)
         log_warn(err_string)
         return err_string
-
-    # Download all MSC issue/prs
-    mscs = get_mscs(room_id)
 
     # Download github events for each msc
     issue_events = get_label_events([i["issue"] for i in mscs], from_time, until_time).values()
