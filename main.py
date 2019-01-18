@@ -721,7 +721,9 @@ def reply_news(room_id, arguments, mscs):
     fcp = '\n'.join(["[MSC %s: %s](%s)" % (i.number, i.title, i.html_url) for i in fcp])
     in_progress = '\n'.join(["[[MSC %s]: %s](%s)" % (i.number, i.title, i.html_url) for i in in_progress])
 
-    response = """News from **%s** til **%s**.
+    twim_banner = "(last TWIM) " if arguments[0].lower() == "twim" else ""
+
+    response = """News from **%s** %stil **%s**.
     
 <pre><code>
 **Approved MSCs**
@@ -736,7 +738,7 @@ def reply_news(room_id, arguments, mscs):
 
 %s
 
-</code></pre>""" % (str(from_time), str(until_time), approved, fcp, in_progress)
+</code></pre>""" % (str(from_time), twim_banner, str(until_time), approved, fcp, in_progress)
 
     if get_room_setting(room_id, "priority_mscs"):
         response += "\n\nBe aware that there are priority MSCs enabled in this room, and that you may not be seeing all available MSC news."
