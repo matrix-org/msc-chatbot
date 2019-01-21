@@ -718,7 +718,7 @@ def reply_news(room_id, arguments, mscs):
     in_progress = [i["issue"] for i in issue_events if i["label"] in in_progress_labels]
 
     approved = '\n'.join(["[[MSC %s]: %s](%s)" % (i.number, i.title, i.html_url) for i in approved])
-    fcp = '\n'.join(["[MSC %s: %s](%s)" % (i.number, i.title, i.html_url) for i in fcp])
+    fcp = '\n'.join(["[[MSC %s]: %s](%s)" % (i.number, i.title, i.html_url) for i in fcp])
     in_progress = '\n'.join(["[[MSC %s]: %s](%s)" % (i.number, i.title, i.html_url) for i in in_progress])
 
     twim_banner = "(last TWIM) " if arguments[0].lower() == "twim" else ""
