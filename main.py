@@ -717,9 +717,35 @@ def reply_news(room_id, arguments, mscs):
     fcp = [i["issue"] for i in issue_events if i["label"] == "final-comment-period"]
     in_progress = [i["issue"] for i in issue_events if i["label"] in in_progress_labels]
 
-    approved = '\n'.join(["[[MSC %s]: %s](%s)" % (i.number, i.title, i.html_url) for i in approved])
-    fcp = '\n'.join(["[[MSC %s]: %s](%s)" % (i.number, i.title, i.html_url) for i in fcp])
-    in_progress = '\n'.join(["[[MSC %s]: %s](%s)" % (i.number, i.title, i.html_url) for i in in_progress])
+    # Convert MSCs from each category into a string with MSC information
+    lists = [(approved, "have been approved."), (fcp, "have entered FCP"), (in_progress, "have been started.")]
+    for i, l in enumerate(lists):
+        output = ""
+        if len(l[0]) == 0:
+            # Report that no MSCs are in this category
+            output = "*No MSCs " + l[1] + "*"
+            lists[i] = output
+            continue
+
+        for j, msc in enumerate(l[0]):
+            title = msc.title
+            num = str(msc.number)
+            # Try to prevent cases such as [MSC 1234]: MSC1234:
+            if title.startswith("MSC"+num):
+                cutoff = len("MSC"+num)
+                title = title[cutoff:]
+            elif title.startswith("MSC "+num):
+                cutoff = len("MSC"+num)
+                title = title[cutoff:]
+
+            # Remove any prepending ':' characters
+            if title.startswith(":"):
+                title = title[1:]
+
+            output += "[[MSC %s]: %s](%s)" % (num, title.strip(), msc.html_url)
+            output += "\n" if j != len(l[0]) - 1 else ""
+
+        lists[i] = output
 
     twim_banner = "(last TWIM) " if arguments[0].lower() == "twim" else ""
 
@@ -738,7 +764,7 @@ def reply_news(room_id, arguments, mscs):
 
 %s
 
-</code></pre>""" % (str(from_time), twim_banner, str(until_time), approved, fcp, in_progress)
+</code></pre>""" % (str(from_time), twim_banner, str(until_time), *lists)
 
     if get_room_setting(room_id, "priority_mscs"):
         response += "\n\nBe aware that there are priority MSCs enabled in this room, and that you may not be seeing all available MSC news."
