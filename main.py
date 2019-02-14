@@ -5,6 +5,7 @@ A bot for matrix users to interact with and to be reminded about various events 
 
 from matrix_client.client import MatrixClient
 from datetime import datetime, timedelta
+from dateutil import parser
 from markdown import markdown
 from github import Github
 from time import mktime
@@ -675,6 +676,7 @@ def reply_news(room_id, arguments, mscs):
         try:
             feed = feedparser.parse("https://matrix.org/blog/category/this-week-in-matrix/feed/")
             from_time = feed["entries"][0]["published"]
+            from_time = parser.parse(from_time).replace(tzinfo=None)
         except:
             log_warn("Feed parsing error")
             return "Unable to parse last TWIM post date"
@@ -693,11 +695,15 @@ def reply_news(room_id, arguments, mscs):
     try:
         # Parse into time.tm_struct objects
         cal = parsedatetime.Calendar()
-        from_time = cal.parse(from_time)[0]
+
+        # Check if from_time has already been parsed (in the case of twim)
+        if type(from_time) != datetime:
+            from_time = cal.parse(from_time)[0]
         until_time = cal.parse(until_time)[0]
 
         # Convert to datetime objects
-        from_time = datetime.fromtimestamp(mktime(from_time))
+        if type(from_time) != datetime:
+            from_time = datetime.fromtimestamp(mktime(from_time))
         until_time = datetime.fromtimestamp(mktime(until_time))
     except Exception:
         err_string = "Unable to parse '%s' and/or '%s' as time" % (from_time, until_time)
