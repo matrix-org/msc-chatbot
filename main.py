@@ -753,7 +753,7 @@ def reply_news(room_id, arguments, mscs):
 
         lists[i] = output
 
-    twim_banner = "(last TWIM) " if arguments[0].lower() == "twim" else ""
+    twim_banner = "(last TWIM) " if len(arguments) > 0 and arguments[0].lower() == "twim" else ""
 
     response = """News from **%s** %stil **%s**.
     
