@@ -45,7 +45,7 @@ known_commands = {
     "SHOW_PENDING": ["show pending"],
     "SHOW_FCP": ["show fcp", "show in fcp"],
     "SHOW_ALL": ["show all", "show active"],
-    "SHOW_SUMMARY": ["show summary", "summarize", "summary", "summarise"],
+    "SHOW_SUMMARY": ["show summary", "summarize", "summarise"],
     "SHOW_NEWS": ["show news"],
     "SHOW_TASKS": ["show tasks"],
     "HELP": ["help", "show help"],
@@ -339,7 +339,7 @@ Set daily summary time:
 
 Show the currently configured daily summary time:
 
-<pre><code>show summary time
+<pre><code>summary time
 </code></pre>
 
 Set the content a daily summary will contain:
