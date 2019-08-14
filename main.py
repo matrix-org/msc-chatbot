@@ -53,12 +53,14 @@ known_commands = {
     # Room-specific commands
     "ROOM_SUMMARY_CONTENT": ["set summary content", "set summary mode"],
     "ROOM_SUMMARY_ENABLE": ["set enable summary", "set summary enable", "set summary enabled"],
-    "ROOM_SUMMARY_DISABLE": ["set disable summary", "set summary disable", "set summary disabled"],
+    "ROOM_SUMMARY_DISABLE": ["set disable summary", "set summary disable",
+                             "set summary disabled"],
     "ROOM_SUMMARY_TIME": ["set time summary", "set summary time", "set summary time to"],
     "ROOM_SUMMARY_TIME_INFO": ["summary time", "get summary time"],
     "ROOM_SHOW_PRIORITY": ["show priority", "priority", "priorities"],
     "ROOM_PRIORITY_MSCS": ["set priority mscs", "set priority"],
 }
+
 
 # Custom variadic functions for logging purposes
 def log_info(*args, trace=False):
@@ -68,12 +70,14 @@ def log_info(*args, trace=False):
         err += '\n' + traceback.format_exc()
     logger.info(err)
 
+
 def log_warn(*args, trace=True):
     global logger
     err = ' '.join([str(arg) for arg in args])
     if trace:
         err += '\n' + traceback.format_exc()
     logger.warn(err)
+
 
 def log_fatal(*args, trace=True):
     global logger
@@ -82,6 +86,7 @@ def log_fatal(*args, trace=True):
         err += '\n' + traceback.format_exc()
     logger.fatal(err)
 
+
 def get_room_setting(room_id, setting_key):
     """Retreives a room setting if it exists, otherwise returns None"""
     global room_specific_data
@@ -89,6 +94,7 @@ def get_room_setting(room_id, setting_key):
     if room_id in room_specific_data and setting_key in room_specific_data[room_id]:
         return room_specific_data[room_id][setting_key]
     return None
+
 
 def update_room_setting(room_id, setting_dict):
     """
@@ -116,6 +122,7 @@ def update_room_setting(room_id, setting_dict):
     except:
         log_warn("Unable to save room data to disk")
 
+
 def delete_room_setting(room_id, setting_key):
     """Removes a setting from a room"""
     global config
@@ -124,7 +131,8 @@ def delete_room_setting(room_id, setting_key):
     try:
         room_specific_data[room_id].pop(setting_key, None)
     except:
-        log_warn("Tried to delete room key '%s' that did not exist on room '%s'." % (setting_key, room_id))
+        log_warn("Tried to delete room key '%s' that did not exist on room '%s'." % (
+        setting_key, room_id))
         return
 
     # Backup old room data if available
@@ -139,10 +147,11 @@ def delete_room_setting(room_id, setting_key):
     except:
         log_warn("Unable to save room data to disk")
 
+
 def invite_received(room_id, state):
     """Matrix room invite received. Join the room"""
     global client
-    time.sleep(3) # Workaround for Synapse#2807
+    time.sleep(3)  # Workaround for Synapse#2807
     try:
         log_info("Joining room:", room_id)
         client.join_room(room_id)
@@ -152,6 +161,7 @@ def invite_received(room_id, state):
         time.sleep(5)
         invite_received(room_id, state)
 
+
 def match_command(command):
     """Returns a command ID on match, or None if no match"""
     for key, command_list in known_commands.items():
@@ -159,6 +169,7 @@ def match_command(command):
             if command.startswith(com):
                 return key
     return None
+
 
 def process_args(room_id, command, mscs, handler, command_id):
     """
@@ -179,6 +190,7 @@ def process_args(room_id, command, mscs, handler, command_id):
     arguments = [arg.strip() for arg in arguments]
 
     return handler(room_id, arguments, mscs)
+
 
 def event_received(event):
     """Matrix event received. Act if it was directed at us"""
@@ -216,22 +228,29 @@ def event_received(event):
         elif command_id == "HELP":
             response = show_help(room_id)
         elif command_id == "ROOM_SUMMARY_CONTENT":
-            response = process_args(room_id, command, mscs, room_summary_content, "ROOM_SUMMARY_CONTENT")
+            response = process_args(room_id, command, mscs, room_summary_content,
+                                    "ROOM_SUMMARY_CONTENT")
         elif command_id == "ROOM_SUMMARY_ENABLE":
-            response = process_args(room_id, command, mscs, room_summary_enable, "ROOM_SUMMARY_ENABLE")
+            response = process_args(room_id, command, mscs, room_summary_enable,
+                                    "ROOM_SUMMARY_ENABLE")
         elif command_id == "ROOM_SUMMARY_DISABLE":
-            response = process_args(room_id, command, mscs, room_summary_disable, "ROOM_SUMMARY_DISABLE")
+            response = process_args(room_id, command, mscs, room_summary_disable,
+                                    "ROOM_SUMMARY_DISABLE")
         elif command_id == "ROOM_SUMMARY_TIME":
-            response = process_args(room_id, command, mscs, room_summary_time, "ROOM_SUMMARY_TIME")
+            response = process_args(room_id, command, mscs, room_summary_time,
+                                    "ROOM_SUMMARY_TIME")
         elif command_id == "ROOM_SUMMARY_TIME_INFO":
-            response = process_args(room_id, command, mscs, room_summary_time_info, "ROOM_SUMMARY_TIME_INFO")
+            response = process_args(room_id, command, mscs, room_summary_time_info,
+                                    "ROOM_SUMMARY_TIME_INFO")
         elif command_id == "ROOM_SHOW_PRIORITY":
-            response = process_args(room_id, command, mscs, room_show_priority, "ROOM_SHOW_PRIORITY")
+            response = process_args(room_id, command, mscs, room_show_priority,
+                                    "ROOM_SHOW_PRIORITY")
         elif command_id == "ROOM_PRIORITY_MSCS":
-            response = process_args(room_id, command, mscs, room_priority_mscs, "ROOM_PRIORITY_MSCS")
+            response = process_args(room_id, command, mscs, room_priority_mscs,
+                                    "ROOM_PRIORITY_MSCS")
         elif command_id == "SHOW_SUMMARY":
             send_summary(room_id)
-            return # send_summary sends its own message
+            return  # send_summary sends its own message
 
         try:
             # Send the response
@@ -240,6 +259,7 @@ def event_received(event):
             log_info("Sent to %s" % room_id)
         except:
             log_warn("Unable to post to room")
+
 
 def show_help(room_id):
     """Return help text"""
@@ -354,6 +374,7 @@ Show this help:
 
     return response
 
+
 # Room Specific Commands
 def room_priority_mscs(room_id, arguments, mscs):
     """Room-specific option to filter output by specific MSC numbers"""
@@ -381,6 +402,7 @@ def room_priority_mscs(room_id, arguments, mscs):
     update_room_setting(room_id, {"priority_mscs": numbers})
     return "Priority MSCs set: %s" % str(numbers)
 
+
 def room_show_priority(room_id, arguments, mscs):
     """Show the currently-set priority MSCs for a room"""
     global config
@@ -392,7 +414,8 @@ def room_show_priority(room_id, arguments, mscs):
 
     response = "["
     for msc in priority_mscs:
-        response += "[%d](https://github.com/%s/pull/%d), " % (msc, config["github"]["repo"], msc)
+        response += "[%d](https://github.com/%s/pull/%d), " % (
+        msc, config["github"]["repo"], msc)
     response = response[:-2] + "]"
 
     return "Currently set priority MSCs: %s" % response
@@ -412,15 +435,18 @@ Usage: `set summary content: [all, pending, fcp, in-progress]`""")
     update_room_setting(room_id, {"summary_content": arguments[0]})
     return "Summary content updated successfully to '%s'." % arguments[0]
 
+
 def room_summary_enable(room_id, arguments, mscs):
     """Enable daily summary for this room"""
     update_room_setting(room_id, {"summary_enabled": True})
     return "Daily summary enabled."
 
+
 def room_summary_disable(room_id, arguments, mscs):
     """Disable daily summary for this room"""
     update_room_setting(room_id, {"summary_enabled": False})
     return "Daily summary disabled."
+
 
 def room_summary_time_info(room_id, arguments, mscs):
     """Show current summary time configured for this room"""
@@ -439,6 +465,7 @@ def room_summary_time_info(room_id, arguments, mscs):
         response += " However, summaries in this room are currently disabled."
 
     return response
+
 
 def room_summary_time(room_id, arguments, mscs):
     """Set the daily time for the room summary"""
@@ -480,6 +507,7 @@ Usage: `set summary time 07:00` or `set summary time 4pm`""")
         log_warn("Unable to parse time: '%s" % arguments[0])
         return "Unknown time parameter '%s'." % arguments[0]
 
+
 def set_up_default_summaries():
     """Sets up a scheduler for a daily summary for all rooms that do not have a schedule set"""
     global client
@@ -492,7 +520,9 @@ def set_up_default_summaries():
             continue
 
         # Schedule a summary
-        schedule.every().day.at(config["bot"]["daily_summary_time"]).do(send_summary, room_id).tag(room_id)
+        schedule.every().day.at(config["bot"]["daily_summary_time"]).do(send_summary,
+                                                                        room_id).tag(room_id)
+
 
 def send_summary(room_id):
     """
@@ -512,7 +542,7 @@ def send_summary(room_id):
         info = reply_pending_mscs(mscs)
     elif mode == "fcp":
         info = reply_fcp_mscs(mscs)
-    elif mode == "all" or mode == None: # Default to mode 'all'
+    elif mode == "all" or mode == None:  # Default to mode 'all'
         info = reply_all_mscs(mscs)
     else:
         log_warn("Unknown summary mode for room %s: %s" % (room_id, mode), trace=False)
@@ -531,10 +561,10 @@ def send_summary(room_id):
 
             # Check if this MSC has passed final comment period
             if ((msc_labels["proposal-in-review"] not in msc["labels"] and
-               msc_labels["proposed-final-comment-period"] not in msc["labels"] and
-               msc_labels["final-comment-period"] not in msc["labels"]) or
-               "finished-final-comment-period" in msc["labels"]):
-               completed_mscs += 1
+                 msc_labels["proposed-final-comment-period"] not in msc["labels"] and
+                 msc_labels["final-comment-period"] not in msc["labels"]) or
+                    "finished-final-comment-period" in msc["labels"]):
+                completed_mscs += 1
 
         info += "\n\nPriority MSC progress: %d/%d" % (completed_mscs, goal)
 
@@ -542,10 +572,11 @@ def send_summary(room_id):
     try:
         room = client.get_rooms()[room_id]
         room.send_html(markdown(info), body=info, msgtype="m.notice")
-    except:
-        log_warn("Unable to send daily summary to %s", room_id)
+    except Exception as e:
+        log_warn("Unable to send daily summary to %s: %s", room_id, e)
 
     return True
+
 
 def reply_in_progress_mscs(mscs):
     """Returns a formatted reply with MSCs that are proposed but not yet pending an FCP"""
@@ -564,6 +595,7 @@ def reply_in_progress_mscs(mscs):
 
     return response
 
+
 def reply_pending_mscs(mscs, user=None):
     """Returns a formatted reply with MSCs that are currently pending a FCP"""
     pending = []
@@ -576,10 +608,23 @@ def reply_pending_mscs(mscs, user=None):
             # If a specific github user was specified, filter by FCPs that that
             # user needs to review
             # TODO: Show concern count
-            reviewers = [x[0]["login"] for x in fcp["reviews"] if x[1] == False]
+            reviewers = [x[0]["login"] for x in fcp["reviews"] if x[1] is False]
             if user and user not in reviewers:
                 continue
-            line = "[[MSC%d](%s)] - %s - *%s*" % (msc.number, msc.html_url, msc.title, fcp["fcp"]["disposition"])
+
+            # Attempt to convert each reviewer's github username to a Matrix ID
+            if "user_ids" in config:
+                temp_reviewers = []
+                for github_username in reviewers:
+                    if github_username in config["user_ids"]:
+                        temp_reviewers.append(config["user_ids"][github_username])
+                    else:
+                        temp_reviewers.append(github_username)
+
+                reviewers = temp_reviewers
+
+            line = "[[MSC%d](%s)] - %s - *%s*" % (
+            msc.number, msc.html_url, msc.title, fcp["fcp"]["disposition"])
 
             # Convert list to a comma separated string
             reviewers = ", ".join(reviewers)
@@ -596,6 +641,7 @@ def reply_pending_mscs(mscs, user=None):
 
     return response
 
+
 def reply_fcp_mscs(mscs):
     """Returns a formatted reply with all MSCs that are in the FCP"""
     fcps = []
@@ -606,7 +652,7 @@ def reply_fcp_mscs(mscs):
             # Figure out remaining days in FCP
             # Assume last comment by MSCBot was made when FCP started
             comments = msc.get_comments()
-            for comment in list(comments)[::-1]: # Iterate from newest comments
+            for comment in list(comments)[::-1]:  # Iterate from newest comments
                 # Check mscbot user id (retrieve from `curl -A 'mscbot' https://api.github.com/users/mscbot`) 
                 if comment.user.id == 40832866:
                     time = comment.created_at - timedelta(days=1)
@@ -615,7 +661,8 @@ def reply_fcp_mscs(mscs):
             remaining_days = config["msc"]["fcp_length"] - (datetime.today() - time).days
             line = "[[MSC%d](%s)] - %s" % (msc.number, msc.html_url, msc.title)
             if remaining_days > 0:
-                line += " - Ends in **%d %s**" % (remaining_days, "day" if remaining_days == 1 else "days")
+                line += " - Ends in **%d %s**" % (
+                remaining_days, "day" if remaining_days == 1 else "days")
             else:
                 line += " - Ends **today**"
             fcps.append(line)
@@ -627,6 +674,7 @@ def reply_fcp_mscs(mscs):
         response += "No MSCs in FCP."
 
     return response
+
 
 def reply_all_mscs(mscs):
     """Returns a formatted reply with MSCs that are proposed, pending or in FCP. Used as daily message."""
@@ -642,6 +690,7 @@ def reply_all_mscs(mscs):
     response += reply_fcp_mscs(mscs)
     return response
 
+
 def reply_tasks(room_id, arguments, mscs):
     """
     Returns a formatted reply with in-progress MSCs that everyone should look
@@ -651,19 +700,20 @@ def reply_tasks(room_id, arguments, mscs):
     """
     # Return in-progress MSCs no matter what
     response = reply_in_progress_mscs(mscs)
-    
+
     # If no user specified, return all pending FCPs
     if len(arguments) == 0:
         response += reply_pending_mscs(mscs)
     # Otherwise, return only pending FCPs that contain the given github user
     else:
         response += reply_pending_mscs(mscs, user=arguments[0])
-    
+
     return response
+
 
 def reply_news(room_id, arguments, mscs):
     """Generates a report for MSC status changes over a given time period"""
-    
+
     # If no time arguments supplied, just default to activity over the last week
     if len(arguments) == 0:
         from_time = "1 week ago"
@@ -674,7 +724,8 @@ def reply_news(room_id, arguments, mscs):
 
         # Get last TWIM blog post time from RSS
         try:
-            feed = feedparser.parse("https://matrix.org/blog/category/this-week-in-matrix/feed/")
+            feed = feedparser.parse(
+                "https://matrix.org/blog/category/this-week-in-matrix/feed/")
             from_time = feed["entries"][0]["published"]
             from_time = parser.parse(from_time).replace(tzinfo=None)
         except:
@@ -685,7 +736,7 @@ def reply_news(room_id, arguments, mscs):
         if len(arguments) >= 4 and arguments[0] == "from":
             index = arguments.index("to")
             from_time = ' '.join(arguments[1:index])
-            until_time = ' '.join(arguments[index+1:])
+            until_time = ' '.join(arguments[index + 1:])
         # Since syntax. e.g "since 1 week ago"
         elif arguments[0] == "since":
             from_time = ' '.join(arguments[1:])
@@ -712,7 +763,7 @@ def reply_news(room_id, arguments, mscs):
 
     # Download github events for each msc
     issue_events = get_label_events([i["issue"] for i in mscs], from_time, until_time).values()
-    
+
     approved_labels = ["finished-final-comment-period",
                        "spec-pr-missing",
                        "spec-pr-in-review",
@@ -724,7 +775,8 @@ def reply_news(room_id, arguments, mscs):
     in_progress = [i["issue"] for i in issue_events if i["label"] in in_progress_labels]
 
     # Convert MSCs from each category into a string with MSC information
-    lists = [(approved, "have been approved."), (fcp, "have entered FCP"), (in_progress, "have been started.")]
+    lists = [(approved, "have been approved."), (fcp, "have entered FCP"),
+             (in_progress, "have been started.")]
     for i, l in enumerate(lists):
         output = ""
         if len(l[0]) == 0:
@@ -737,11 +789,11 @@ def reply_news(room_id, arguments, mscs):
             title = msc.title
             num = str(msc.number)
             # Try to prevent cases such as [MSC 1234]: MSC1234:
-            if title.startswith("MSC"+num):
-                cutoff = len("MSC"+num)
+            if title.startswith("MSC" + num):
+                cutoff = len("MSC" + num)
                 title = title[cutoff:]
-            elif title.startswith("MSC "+num):
-                cutoff = len("MSC"+num)
+            elif title.startswith("MSC " + num):
+                cutoff = len("MSC" + num)
                 title = title[cutoff:]
 
             # Remove any prepending ':' characters
@@ -753,7 +805,8 @@ def reply_news(room_id, arguments, mscs):
 
         lists[i] = output
 
-    twim_banner = "(last TWIM) " if len(arguments) > 0 and arguments[0].lower() == "twim" else ""
+    twim_banner = "(last TWIM) " if len(arguments) > 0 and arguments[
+        0].lower() == "twim" else ""
 
     response = """News from **%s** %stil **%s**.
     
@@ -776,6 +829,7 @@ def reply_news(room_id, arguments, mscs):
         response += "\n\nBe aware that there are priority MSCs enabled in this room, and that you may not be seeing all available MSC news."
 
     return response
+
 
 def get_label_events(issues, date_from, date_to):
     """
@@ -815,6 +869,7 @@ def get_label_events(issues, date_from, date_to):
 
     return issue_states
 
+
 def get_mscs(room_id=None):
     """
     Get up to date MSC metadata from Github.
@@ -835,9 +890,9 @@ def get_mscs(room_id=None):
             if priority_mscs and issue.number not in priority_mscs:
                 continue
 
-        issues.append(issue) 
+        issues.append(issue)
 
-    # Create a list relating an issue to its possible FCP information (FCP info added later)
+        # Create a list relating an issue to its possible FCP information (FCP info added later)
     issues = [({"issue": issue,
                 "labels": list(issue.labels),
                 "fcp": None}) for issue in issues]
@@ -853,6 +908,7 @@ def get_mscs(room_id=None):
                     issue["fcp"] = fcp
 
     return issues
+
 
 def main():
     global client
@@ -875,12 +931,14 @@ def main():
     # Determine whether we are using a logfile or not
     logging_format = "[%(levelname)s] %(asctime)s: %(message)s"
     if "logfile" in config["logging"]:
-        logging.basicConfig(level=logging.INFO if config["logging"]["level"] != "DEBUG" else logging.DEBUG,
-                            format=logging_format,
-                            filename=config["logging"]["logfile"])
+        logging.basicConfig(
+            level=logging.INFO if config["logging"]["level"] != "DEBUG" else logging.DEBUG,
+            format=logging_format,
+            filename=config["logging"]["logfile"])
     else:
-        logging.basicConfig(level=logging.INFO if config["logging"]["level"] != "DEBUG" else logging.DEBUG,
-                            format=logging_format)
+        logging.basicConfig(
+            level=logging.INFO if config["logging"]["level"] != "DEBUG" else logging.DEBUG,
+            format=logging_format)
     logger = logging.getLogger()
 
     # Retrieve room-specific data if config file exists
@@ -900,7 +958,9 @@ def main():
         if get_room_setting(room_id, "summary_time"):
             # Set a scheduler for that time
             # Tag with the room ID so we can easily cancel later if necessary
-            schedule.every().day.at(config["bot"]["daily_summary_time"]).do(send_summary, room_id).tag(room_id)
+            schedule.every().day.at(config["bot"]["daily_summary_time"]).do(send_summary,
+                                                                            room_id).tag(
+                room_id)
 
     # Schedule daily summary messages to rooms that do not have a custom time
     set_up_default_summaries()
@@ -916,7 +976,8 @@ def main():
 
     # Login to Matrix and listen for messages
     homeserver = "https://" + config["matrix"]["user_id"].split(":")[-1]
-    client = MatrixClient(homeserver, user_id=config["matrix"]["user_id"], token=config["matrix"]["token"])
+    client = MatrixClient(homeserver, user_id=config["matrix"]["user_id"],
+                          token=config["matrix"]["token"])
     client.add_invite_listener(invite_received)
     client.add_listener(event_received, event_type="m.room.message")
     log_info("Connected to Matrix")
@@ -928,7 +989,8 @@ def main():
         except:
             log_warn("Unable to contact /sync")
         schedule.run_pending()
-        time.sleep(config["matrix"]["sync_interval"]) # Wait a few seconds between syncs
+        time.sleep(config["matrix"]["sync_interval"])  # Wait a few seconds between syncs
+
 
 if __name__ == "__main__":
     main()

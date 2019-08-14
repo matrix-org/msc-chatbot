@@ -15,6 +15,11 @@ labels = ["proposal",
           "spec-pr-in-review",
           "merged"]
 
+# Github username to Matrix user id mappings
+# Allows the bot to ping people when they need to approve FCP
+[user_ids]
+someone = "@someone:example.com"
+
 [mscbot]
 # MSCBot web server (https://github.com/matrix-org/mscbot)
 url = "https://mscbot.amorgan.xyz"
