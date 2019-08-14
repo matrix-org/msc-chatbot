@@ -31,6 +31,9 @@ user_id = "@mscbot:matrix.org"
 token = ""
 # Interval between /sync requests.
 sync_interval = 5
+# Type of message the bot should send to rooms
+# Note that only "m.room.message" will notify Riot users
+message_type = "m.room.message"
 
 [bot]
 # Room-specific data file path

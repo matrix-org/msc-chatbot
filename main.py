@@ -207,7 +207,7 @@ def event_received(event):
         log_info("Received command:", command)
         command_id = match_command(command)
         if command_id == None:
-            room.send_html("Unknown command.", msgtype="m.notice")
+            room.send_html("Unknown command.", msgtype=config["matrix"]["message_type"])
             return
 
         # Retrieve MSC information from Github labels
@@ -255,7 +255,7 @@ def event_received(event):
         try:
             # Send the response
             log_info("Sending command response to %s" % room_id)
-            room.send_html(markdown(response), body=response, msgtype="m.notice")
+            room.send_html(markdown(response), body=response, msgtype=config["matrix"]["message_type"])
             log_info("Sent to %s" % room_id)
         except:
             log_warn("Unable to post to room")
@@ -571,7 +571,7 @@ def send_summary(room_id):
     # Send summary
     try:
         room = client.get_rooms()[room_id]
-        room.send_html(markdown(info), body=info, msgtype="m.notice")
+        room.send_html(markdown(info), body=info, msgtype=config["matrix"]["message_type"])
     except Exception as e:
         log_warn("Unable to send daily summary to %s: %s", room_id, e)
 
