@@ -505,7 +505,7 @@ Usage: `set summary time 07:00` or `set summary time 4pm`""")
         # Add scheduler for new time
         schedule.every().day.at(time_24hr).do(send_summary, room_id).tag(room_id)
 
-        return "Summary time now set to %s." % time_24hr
+        return "Summary time now set to %s UTC." % time_24hr
     except:
         log_warn("Unable to parse time: '%s" % arguments[0])
         return "Unknown time parameter '%s'." % arguments[0]
@@ -590,7 +590,7 @@ def reply_in_progress_mscs(mscs):
         msc = msc_dict["issue"]
         labels = msc_dict["labels"]
         if msc_labels["proposal-in-review"] in labels:
-            in_progress.append("[[MSC%d](%s)] - %s" % (msc.number, msc.html_url, msc.title))
+            in_progress.append("[%s](%s)" % (msc.title, msc.html_url))
 
     response = "\n\n**In Progress**\n\n"
     if len(in_progress) > 0:
@@ -628,8 +628,7 @@ def reply_pending_mscs(mscs, user=None):
 
                 reviewers = temp_reviewers
 
-            line = "[[MSC%d](%s)] - %s - *%s*" % (
-            msc.number, msc.html_url, msc.title, fcp["fcp"]["disposition"])
+            line = "[%s](%s) - *%s*" % (msc.title, msc.html_url, fcp["fcp"]["disposition"])
 
             # Convert list to a comma separated string
             reviewers = ", ".join(reviewers)
@@ -664,7 +663,7 @@ def reply_fcp_mscs(mscs):
                     break
 
             remaining_days = config["msc"]["fcp_length"] - (datetime.today() - time).days
-            line = "[[MSC%d](%s)] - %s" % (msc.number, msc.html_url, msc.title)
+            line = "[%s](%s)" % (msc.title, msc.html_url)
             if remaining_days > 0:
                 line += " - Ends in **%d %s**" % (
                 remaining_days, "day" if remaining_days == 1 else "days")
@@ -786,26 +785,12 @@ def reply_news(room_id, arguments, mscs):
         output = ""
         if len(l[0]) == 0:
             # Report that no MSCs are in this category
-            output = "*No MSCs " + l[1] + "*"
+            output = "*No MSCs %s*" % (l[1],)
             lists[i] = output
             continue
 
         for j, msc in enumerate(l[0]):
-            title = msc.title
-            num = str(msc.number)
-            # Try to prevent cases such as [MSC 1234]: MSC1234:
-            if title.startswith("MSC" + num):
-                cutoff = len("MSC" + num)
-                title = title[cutoff:]
-            elif title.startswith("MSC " + num):
-                cutoff = len("MSC" + num)
-                title = title[cutoff:]
-
-            # Remove any prepending ':' characters
-            if title.startswith(":"):
-                title = title[1:]
-
-            output += "[[MSC %s]: %s](%s)" % (num, title.strip(), msc.html_url)
+            output += "[%s](%s)" % (msc.title.strip(), msc.html_url)
             output += "\n" if j != len(l[0]) - 1 else ""
 
         lists[i] = output
