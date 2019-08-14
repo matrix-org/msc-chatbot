@@ -505,7 +505,11 @@ Usage: `set summary time 07:00` or `set summary time 4pm`""")
         # Add scheduler for new time
         schedule.every().day.at(time_24hr).do(send_summary, room_id).tag(room_id)
 
-        return "Summary time now set to %s UTC." % time_24hr
+        # Get the current time for reference
+        curr_time = datetime.now().strftime("%H:%M")
+
+        return "Summary time now set to %s UTC. The current time is %s" % (time_24hr,
+                                                                           curr_time)
     except:
         log_warn("Unable to parse time: '%s" % arguments[0])
         return "Unknown time parameter '%s'." % arguments[0]
