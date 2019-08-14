@@ -37,7 +37,7 @@ logger = None
 # Room ID to room-settings dictionary mapping
 room_specific_data = {}
 # Regex for replacing Matrix IDs with formatted pills
-pill_regex = re.compile(r"(@[^ ]+:[^ ]+.[^ ])")
+pill_regex = re.compile(r"(@[a-z0-9A-Z]+:[a-z0-9A-Z]+\.[a-z]+)")
 
 # Available bot commands and their variants.
 # Certain commands can accept parameters which should immediately follow the
