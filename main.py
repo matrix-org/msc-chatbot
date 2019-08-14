@@ -206,7 +206,7 @@ def event_received(event):
         command = body[8:].strip()
         log_info("Received command:", command)
         command_id = match_command(command)
-        if command_id == None:
+        if command_id is None:
             room.send_html("Unknown command.", msgtype=config["matrix"]["message_type"])
             return
 
