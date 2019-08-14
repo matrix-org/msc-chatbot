@@ -916,7 +916,7 @@ def get_mscs(room_id=None):
 
 def pillify(text):
     """Convert Matrix IDs to pills"""
-    return pill_regex.sub(r'<a href="https://matrix.to/#/$1">user</a>', text)
+    return pill_regex.sub(r'<a href="https://matrix.to/#/\1">user</a>', text)
 
 
 def main():
