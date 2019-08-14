@@ -20,6 +20,7 @@ import requests
 import logging
 import sys
 import os
+import re
 
 # Matrix client
 client = None
@@ -35,6 +36,8 @@ config = None
 logger = None
 # Room ID to room-settings dictionary mapping
 room_specific_data = {}
+# Regex for replacing Matrix IDs with formatted pills
+pill_regex = re.compile(r"(@[^ ]+:[^ ]+.[^ ])")
 
 # Available bot commands and their variants.
 # Certain commands can accept parameters which should immediately follow the
@@ -571,7 +574,9 @@ def send_summary(room_id):
     # Send summary
     try:
         room = client.get_rooms()[room_id]
-        room.send_html(markdown(info), body=info, msgtype=config["matrix"]["message_type"])
+        room.send_html(
+            pillify(markdown(info)), body=info, msgtype=config["matrix"]["message_type"]
+        )
     except Exception as e:
         log_warn("Unable to send daily summary to %s: %s", room_id, e)
 
@@ -908,6 +913,10 @@ def get_mscs(room_id=None):
                     issue["fcp"] = fcp
 
     return issues
+
+def pillify(text):
+    """Convert Matrix IDs to pills"""
+    return pill_regex.sub(r'<a href="https://matrix.to/#/$1">user</a>', text)
 
 
 def main():
