@@ -58,6 +58,12 @@ known_commands = {
     "ROOM_SUMMARY_ENABLE": ["set enable summary", "set summary enable", "set summary enabled"],
     "ROOM_SUMMARY_DISABLE": ["set disable summary", "set summary disable",
                              "set summary disabled"],
+    "ROOM_SUMMARY_WEEKEND_ENABLE": [
+        "set summary weekend enable", "set summary weekend enabled"
+    ],
+    "ROOM_SUMMARY_WEEKEND_DISABLE": [
+        "set summary weekend disable", "set summary weekend disabled"
+    ],
     "ROOM_SUMMARY_TIME": ["set time summary", "set summary time", "set summary time to"],
     "ROOM_SUMMARY_TIME_INFO": ["summary time", "get summary time"],
     "ROOM_SHOW_PRIORITY": ["show priority", "priority", "priorities"],
@@ -90,13 +96,13 @@ def log_fatal(*args, trace=True):
     logger.fatal(err)
 
 
-def get_room_setting(room_id, setting_key):
-    """Retreives a room setting if it exists, otherwise returns None"""
+def get_room_setting(room_id, setting_key, default_value=None):
+    """Retreives a room setting if it exists, otherwise returns default_value"""
     global room_specific_data
 
     if room_id in room_specific_data and setting_key in room_specific_data[room_id]:
         return room_specific_data[room_id][setting_key]
-    return None
+    return default_value
 
 
 def update_room_setting(room_id, setting_dict):
@@ -239,6 +245,13 @@ def event_received(event):
         elif command_id == "ROOM_SUMMARY_DISABLE":
             response = process_args(room_id, command, mscs, room_summary_disable,
                                     "ROOM_SUMMARY_DISABLE")
+
+        elif command_id == "ROOM_SUMMARY_WEEKEND_ENABLE":
+            response = process_args(room_id, command, mscs, room_summary_weekend_enable,
+                                    "ROOM_SUMMARY_WEEKEND_ENABLE")
+        elif command_id == "ROOM_SUMMARY_WEEKEND_DISABLE":
+            response = process_args(room_id, command, mscs, room_summary_weekend_disable,
+                                    "ROOM_SUMMARY_WEEKEND_DISABLE")
         elif command_id == "ROOM_SUMMARY_TIME":
             response = process_args(room_id, command, mscs, room_summary_time,
                                     "ROOM_SUMMARY_TIME")
@@ -451,6 +464,18 @@ def room_summary_disable(room_id, arguments, mscs):
     return "Daily summary disabled."
 
 
+def room_summary_weekend_enable(room_id, arguments, mscs):
+    """Enable daily summary on weekends for this room"""
+    update_room_setting(room_id, {"summary_weekend_enabled": True})
+    return "Daily summary enabled on the weekends."
+
+
+def room_summary_weekend_disable(room_id, arguments, mscs):
+    """Disable daily summary on weekends for this room"""
+    update_room_setting(room_id, {"summary_weekend_enabled": False})
+    return "Daily summary disabled on the weekends."
+
+
 def room_summary_time_info(room_id, arguments, mscs):
     """Show current summary time configured for this room"""
     global room_specific_data
@@ -464,7 +489,7 @@ def room_summary_time_info(room_id, arguments, mscs):
         response += config["bot"]["daily_summary_time"]
     response += " UTC."
 
-    if get_room_setting(room_id, "summary_enabled") == False:
+    if not get_room_setting(room_id, "summary_enabled"):
         response += " However, summaries in this room are currently disabled."
 
     return response
@@ -523,13 +548,19 @@ def set_up_default_summaries():
     for room_id in room_specific_data.keys():
         if get_room_setting(room_id, "summary_time"):
             continue
-        if get_room_setting(room_id, "summary_enabled") == False:
+        if not get_room_setting(room_id, "summary_enabled"):
             continue
+        if get_room_setting(room_id, "summary_weekend_enabled", True):  # On by default
+            if currently_weekend():
+                continue
 
         # Schedule a summary
         schedule.every().day.at(config["bot"]["daily_summary_time"]).do(send_summary,
                                                                         room_id).tag(room_id)
 
+def currently_weekend():
+    """Returns true or false based on whether it is currently the weekend"""
+    return datetime.today().weekday() < 5
 
 def send_summary(room_id):
     """
