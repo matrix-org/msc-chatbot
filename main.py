@@ -560,7 +560,7 @@ def set_up_default_summaries():
 
 def currently_weekend():
     """Returns true or false based on whether it is currently the weekend"""
-    return datetime.today().weekday() < 5
+    return datetime.today().weekday() >= 5
 
 def send_summary(room_id):
     """
