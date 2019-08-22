@@ -37,7 +37,7 @@ logger = None
 # Room ID to room-settings dictionary mapping
 room_specific_data = {}
 # Regex for replacing Matrix IDs with formatted pills
-pill_regex = re.compile(r"(@[a-z0-9A-Z]+:[a-z0-9A-Z]+\.[a-z]+)")
+pill_regex = re.compile(r"@([a-z0-9A-Z]+):([a-z0-9A-Z]+)\.([a-z]+)")
 
 # Available bot commands and their variants.
 # Certain commands can accept parameters which should immediately follow the
@@ -610,7 +610,7 @@ def send_summary(room_id):
     try:
         room = client.get_rooms()[room_id]
         room.send_html(
-            pillify(markdown(info)), body=info, msgtype=config["matrix"]["message_type"]
+            markdown(info), body=info, msgtype=config["matrix"]["message_type"]
         )
     except Exception as e:
         log_warn("Unable to send daily summary to %s: %s", room_id, e)
@@ -677,6 +677,9 @@ def reply_pending_mscs(mscs, user=None):
         response += '\n\n'.join(pending)
     else:
         response += 'No MSCs pending FCP.'
+
+    # Convert Matrix IDs to pills
+    response = pillify(response)
 
     return response
 
@@ -936,7 +939,7 @@ def get_mscs(room_id=None):
 
 def pillify(text):
     """Convert Matrix IDs to pills"""
-    return pill_regex.sub(r'<a href="https://matrix.to/#/\1">\1</a>', text)
+    return pill_regex.sub(r'<a href="https://matrix.to/#/@\1:\2.\3">\1</a>', text)
 
 
 def main():
