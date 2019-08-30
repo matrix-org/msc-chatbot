@@ -828,7 +828,7 @@ def reply_news(room_id, arguments, mscs):
             continue
 
         for j, msc in enumerate(l[0]):
-            output += "[%s](%s)" % (msc.title.strip(), msc.html_url)
+            output += "* [%s](%s)" % (msc.title.strip(), msc.html_url)
             output += "\n" if j != len(l[0]) - 1 else ""
 
         lists[i] = output
